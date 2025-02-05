@@ -68,3 +68,15 @@ class ConfigConnector:
             ["connector", "db_port"],
             self.load,
         )
+
+        self.deepseek_api_key = get_config_variable(
+            "CONNECTOR_DEEP_SEEK_API_KEY",
+            ["connector", "deepseek_api_key"],
+            self.load,
+        )
+
+        self.deepseek_api_url = get_config_variable(
+            "CONNECTOR_DEEP_SEEK_URL",
+            ["connector", "deepseek_api_url"],
+            self.load,
+        )

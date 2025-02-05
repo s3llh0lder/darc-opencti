@@ -1,60 +1,102 @@
 import requests
+import json
+import re
+from openai import OpenAI  # Add OpenAI dependency
+from .config_variables import ConfigConnector
 
 
 class ConnectorClient:
     def __init__(self, helper, config):
-        """
-        Initialize the client with necessary configurations
-        """
         self.helper = helper
         self.config = config
 
-        # Define headers in session and update when needed
-        headers = {"Bearer": self.config.api_key}
-        self.session = requests.Session()
-        self.session.headers.update(headers)
+        # Initialize OpenAI client with DeepSeek configuration
+        self.ai_client = OpenAI(
+            api_key=self.config.deepseek_api_key,
+            base_url=self.config.deepseek_api_url,
+        )
 
-    def _request_data(self, api_url: str, params=None):
+    def generate_stix_from_text(self, text: str) -> dict:
         """
-        Internal method to handle API requests
-        :return: Response in JSON format
-        """
-        try:
-            response = self.session.get(api_url, params=params)
-
-            self.helper.connector_logger.info(
-                "[API] HTTP Get Request to endpoint", {"url_path": api_url}
-            )
-
-            response.raise_for_status()
-            return response
-
-        except requests.RequestException as err:
-            error_msg = "[API] Error while fetching data: "
-            self.helper.connector_logger.error(
-                error_msg, {"url_path": {api_url}, "error": {str(err)}}
-            )
-            return None
-
-    def get_entities(self, params=None) -> dict:
-        """
-        If params is None, retrieve all CVEs in National Vulnerability Database
-        :param params: Optional Params to filter what list to return
-        :return: A list of dicts of the complete collection of CVE from NVD
+        Convert security-related text to STIXv2 format using AI
+        :param text: Input text containing security indicators
+        :return: STIXv2 formatted JSON
         """
         try:
-            # ===========================
-            # === Add your code below ===
-            # ===========================
+            # Structured prompt for consistent STIX conversion
+            system_prompt = """You are a cybersecurity analyst specialized in STIXv2 format. 
+            Convert the following text into valid STIXv2 JSON format with these rules:
+            1. Identify malware, tools, and attack patterns
+            2. Create relationships between entities
+            3. Use proper STIXv2 syntax and object types
+            4. Include UUIDs for all objects
+            5. You MUST return ONLY valid STIX 2.1 JSON wrapped in ```json markers.
+            Example:
+            ```json
+            {
+              "type": "bundle",
+              "id": "bundle--...",
+              "objects": [
+                {
+                  "type": "malware",
+                  "id": "malware--...",
+                  "name": "Example Malware"
+                }
+              ]
+            }"""
 
-            # response = self._request_data(self.config.api_base_url, params=params)
+            response = self.ai_client.chat.completions.create(
+                model="deepseek-chat",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": text}
+                ],
+                temperature=0.1,
+                stream=False
+            )
 
-            # return response.json()
-            # ===========================
-            # === Add your code above ===
-            # ===========================
-
-            raise NotImplementedError
+            # Extract and parse the STIX output
+            stix_output = response.choices[0].message.content
+            return self._validate_stix(stix_output)
 
         except Exception as err:
-            self.helper.connector_logger.error(err)
+            self.helper.connector_logger.error(f"STIX generation failed: {str(err)}")
+            return {}
+
+    def _validate_stix(self, stix_data: str) -> dict:
+        """
+        Validate and clean STIX output
+        """
+        try:
+            if not stix_data:
+                self.helper.connector_logger.error("Received empty STIX response")
+                return {}
+
+            # Enhanced cleaning pattern
+            clean_data = re.sub(r'^```json|```$', '', stix_data, flags=re.DOTALL).strip()
+
+            if not clean_data:
+                self.helper.connector_logger.error("Empty content after cleaning", {
+                    "original_data": stix_data[:100] + "..." if len(stix_data) > 100 else stix_data
+                })
+                return {}
+
+            # Attempt JSON parsing
+            parsed = json.loads(clean_data)
+
+            # Basic STIX structure validation
+            if not isinstance(parsed, dict) or parsed.get("type") != "bundle":
+                self.helper.connector_logger.error("Invalid STIX bundle structure")
+                return {}
+
+            return parsed
+
+        except json.JSONDecodeError as e:
+            self.helper.connector_logger.error("JSON decoding failed", {
+                "error": str(e),
+                "clean_data_sample": clean_data[:200] + "..." if len(clean_data) > 200 else clean_data
+            })
+            return {}
+        except Exception as e:
+            self.helper.connector_logger.error(f"Unexpected validation error: {str(e)}")
+            return {}

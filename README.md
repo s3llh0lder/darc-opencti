@@ -65,13 +65,15 @@ Below are the parameters you'll need to set for running the connector properly:
 
 ### Connector extra parameters environment variables
 
-| Parameter        | config.yml  | Docker environment variable  | Mandatory | Description                |
-|------------------|-------------|------------------------------|-----------|----------------------------|
-| Databse User     | db_user     | `CONNECTOR_DARC_DB_USER`     | Yes       | The user to access db.     |
-| Databse Password | db_password | `CONNECTOR_DARC_DB_PASSWORD` | Yes       | The password to access db. |
-| Databse Host     | db_host     | `CONNECTOR_DARC_DB_HOST`     | Yes       | The database host IP.      |
-| Databse Port     | db_port     | `CONNECTOR_DARC_DB_PORT`     | Yes       | The database port.         |
-| Databse Name     | db_name     | `CONNECTOR_DARC_DB_NAME`     | Yes       | The database schema name.  |
+| Parameter        | config.yml         | Docker environment variable    | Mandatory | Description                |
+|------------------|--------------------|--------------------------------|-----------|----------------------------|
+| Databse User     | db_user            | `CONNECTOR_DARC_DB_USER`       | Yes       | The user to access db.     |
+| Databse Password | db_password        | `CONNECTOR_DARC_DB_PASSWORD`   | Yes       | The password to access db. |
+| Databse Host     | db_host            | `CONNECTOR_DARC_DB_HOST`       | Yes       | The database host IP.      |
+| Databse Port     | db_port            | `CONNECTOR_DARC_DB_PORT`       | Yes       | The database port.         |
+| Databse Name     | db_name            | `CONNECTOR_DARC_DB_NAME`       | Yes       | The database schema name.  |
+| DeepSeek URL     | deepseek_api_url   | `CONNECTOR_DEEP_SEEK_URL`      | Yes       | The DeepSeek API Url.      |
+| DeepSeek API KEY | deepseek_api_key   | `CONNECTOR_DEEP_SEEK_API_KEY`  | Yes       | The DeepSeek API Key.      |
 
 
 ## Deployment
