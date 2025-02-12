@@ -1,17 +1,30 @@
-FROM python:3.12-alpine
+# Use Python 3.11 on Debian Bookworm instead of Alpine
+FROM python:3.11-bookworm
+
+# Environment variable
 ENV CONNECTOR_TYPE=EXTERNAL_IMPORT
 
-# Copy the connector
+# Copy your connector source code
 COPY src /opt/opencti-connector-darc
 
-# Install Python modules
-# hadolint ignore=DL3003
-RUN apk update && apk upgrade && \
-    apk --no-cache add git build-base libmagic libffi-dev libxml2-dev libxslt-dev
+# Install required packages
+# - apt-get update & upgrade
+# - Install Git, build-essential, libmagic, libffi-dev, libxml2-dev, libxslt-dev
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+        git \
+        build-essential \
+        libmagic-dev \
+        libffi-dev \
+        libxml2-dev \
+        libxslt-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN cd /opt/opencti-connector-darc && \
-    pip3 install --no-cache-dir -r requirements.txt && \
-    apk del git build-base
+# Now install Python dependencies
+# (Adjust to your project's requirements, e.g., `pip install -r requirements.txt`)
+WORKDIR /opt/opencti-connector-darc
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Expose and entrypoint
 COPY entrypoint.sh /
