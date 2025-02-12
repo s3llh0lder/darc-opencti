@@ -6,3 +6,13 @@ psycopg2-binary==2.9.10
 
 # Additional Utilities
 ipaddress==1.0.23
+
+#classifiers
+joblib~=1.4.2
+scikit-learn~=1.6.1
+typing_extensions~=4.10.0
+numpy~=2.0.2
+tensorflow~=2.18.0
+scipy~=1.13.1
+pydantic~=2.10.5
+packaging~=24.2

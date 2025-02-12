@@ -1,8 +1,6 @@
-import requests
 import json
 import re
 from openai import OpenAI  # Add OpenAI dependency
-from .config_variables import ConfigConnector
 
 
 class ConnectorClient:
@@ -49,10 +47,11 @@ class ConnectorClient:
                 model="deepseek-chat",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": text}
+                    {"role": "user", "content": text},
                 ],
+                response_format={"type": "json_object"},
                 temperature=0.1,
-                stream=False
+                stream=False,
             )
 
             # Extract and parse the STIX output
@@ -73,12 +72,21 @@ class ConnectorClient:
                 return {}
 
             # Enhanced cleaning pattern
-            clean_data = re.sub(r'^```json|```$', '', stix_data, flags=re.DOTALL).strip()
+            clean_data = re.sub(
+                r"^```json|```$", "", stix_data, flags=re.DOTALL
+            ).strip()
 
             if not clean_data:
-                self.helper.connector_logger.error("Empty content after cleaning", {
-                    "original_data": stix_data[:100] + "..." if len(stix_data) > 100 else stix_data
-                })
+                self.helper.connector_logger.error(
+                    "Empty content after cleaning",
+                    {
+                        "original_data": (
+                            stix_data[:100] + "..."
+                            if len(stix_data) > 100
+                            else stix_data
+                        )
+                    },
+                )
                 return {}
 
             # Attempt JSON parsing
@@ -92,10 +100,17 @@ class ConnectorClient:
             return parsed
 
         except json.JSONDecodeError as e:
-            self.helper.connector_logger.error("JSON decoding failed", {
-                "error": str(e),
-                "clean_data_sample": clean_data[:200] + "..." if len(clean_data) > 200 else clean_data
-            })
+            self.helper.connector_logger.error(
+                "JSON decoding failed",
+                {
+                    "error": str(e),
+                    "clean_data_sample": (
+                        clean_data[:200] + "..."
+                        if len(clean_data) > 200
+                        else clean_data
+                    ),
+                },
+            )
             return {}
         except Exception as e:
             self.helper.connector_logger.error(f"Unexpected validation error: {str(e)}")

@@ -1,80 +1,72 @@
-import requests
 import psycopg2
 from pycti import OpenCTIConnectorHelper
-from psycopg2 import sql
-
+from .classification.classifier import DataClassifier
 from .client_api import ConnectorClient
 from .config_variables import ConfigConnector
+from .db import DBSingleton
+
 
 class DarcConnector:
     def __init__(self):
         self.config = ConfigConnector()
         self.helper = OpenCTIConnectorHelper(self.config.load)
         self.deepseek_client = ConnectorClient(self.helper, self.config)
-
-        # Database connection
-        self.db_conn = psycopg2.connect(
-            dbname=self.config.db_name,
-            user=self.config.db_user,
-            password=self.config.db_password,
-            host=self.config.db_host,
-            port=self.config.db_port,
-        )
-        self.db_cursor = self.db_conn.cursor()
-
-    def fetch_unprocessed_data(self):
-        """Fetch unprocessed records from database"""
-        query = """
-            SELECT id, url, matched_keywords, html, timestamp 
-            FROM db.matched_content 
-            WHERE uploaded = FALSE
-        """
-        self.db_cursor.execute(query)
-        return self.db_cursor.fetchall()
-
-    def mark_as_uploaded(self, record_id):
-        """Mark record as processed in database"""
-        update_query = sql.SQL(
-            "UPDATE db.matched_content SET uploaded = TRUE WHERE id = %s"
-        )
-        self.db_cursor.execute(update_query, (record_id,))
-        self.db_conn.commit()
+        self.classifier = DataClassifier()
+        self.db_handler = DBSingleton().get_instance()
 
     def process_data(self) -> None:
-        """Main processing workflow"""
-        records = self.fetch_unprocessed_data()
+        """Main processing workflow with per-record handling"""
+        records = self.db_handler.fetch_unprocessed_data()
         if not records:
             self.helper.connector_logger.info("No new records to process")
             return
 
-        all_stix_objects = []
-        processed_ids = []
+        processed_count = 0
+        error_count = 0
 
         for record in records:
             record_id, url, keywords, html, timestamp = record
+            success = False
 
-            # Convert content to STIX
-            stix_objects = self.deepseek_client.generate_stix_from_text(html)
-            self.helper.connector_logger.info(f"Created STIX object {stix_objects}")
+            try:
+                # Process individual record
+                self.helper.connector_logger.debug(f"Processing record {record_id}")
 
-            if stix_objects:
-                all_stix_objects.extend(stix_objects)
-                processed_ids.append(record_id)
-                self.helper.connector_logger.debug(f"Processed record {record_id}")
-            else:
-                self.helper.connector_logger.warning(f"Failed to process record {record_id}")
+                self.classifier.classify_data(html, record_id)
 
-        # Send all STIX objects in a single bundle
-        # if all_stix_objects:
-        #     bundle = self.helper.stix2_create_bundle(all_stix_objects)
-        #     self.helper.send_stix2_bundle(bundle)
-        #     self.helper.connector_logger.info(
-        #         f"Successfully sent {len(all_stix_objects)} STIX objects"
-        #     )
+                # Convert content to STIX
+                # stix_objects = self.deepseek_client.generate_stix_from_text(html)
 
-            # Mark records as uploaded only after successful processing
-            for record_id in processed_ids:
-                self.mark_as_uploaded(record_id)
+                # if stix_objects:
+                #     # Create and send individual bundle
+                #     # bundle = self.helper.stix2_create_bundle(stix_objects)
+                #     # self.helper.send_stix2_bundle(bundle)
+                #     success = True
+                #     processed_count += 1
+                #     self.helper.connector_logger.info(f"Successfully processed record {record_id}")
+                # else:
+                #     self.helper.connector_logger.warning(f"Empty STIX conversion for record {record_id}")
+
+            except Exception as e:
+                error_count += 1
+                self.helper.connector_logger.error(
+                    f"Error processing record {record_id}: {str(e)}",
+                    {"record_id": record_id, "error": str(e)},
+                )
+            finally:
+                if success:
+                    try:
+                        self.db_handler.mark_as_processed(record_id)
+                    except Exception as e:
+                        error_count += 1
+                        self.helper.connector_logger.error(
+                            f"Failed to mark record {record_id} as processed: {str(e)}"
+                        )
+
+        # Final status report
+        self.helper.connector_logger.info(
+            f"Processing complete - Successful: {processed_count}, Failed: {error_count}, Total: {len(records)}"
+        )
 
     def run(self) -> None:
         """Main execution scheduler"""
