@@ -1,3 +1,4 @@
+import threading
 import psycopg2
 from pycti import OpenCTIConnectorHelper
 from .classification.classifier import DataClassifier
@@ -13,60 +14,112 @@ class DarcConnector:
         self.deepseek_client = ConnectorClient(self.helper, self.config)
         self.classifier = DataClassifier()
         self.db_handler = DBSingleton().get_instance()
+        self.record_locks = {}  # Per-record locking mechanism
+        self.global_lock = threading.Lock()  # For record_locks access
 
     def process_data(self) -> None:
-        """Main processing workflow with per-record handling"""
-        records = self.db_handler.fetch_unprocessed_data()
-        if not records:
-            self.helper.connector_logger.info("No new records to process")
-            return
+        """Orchestrates thread-safe record processing"""
+        with self.global_lock:
+            records = self.db_handler.fetch_unprocessed_data()
+            if not records:
+                self.helper.connector_logger.info("No new records to process")
+                return
 
         processed_count = 0
         error_count = 0
 
         for record in records:
-            record_id, url, keywords, html, timestamp = record
-            success = False
+            record_id = record[0]
+            with self._get_record_lock(record_id):
+                success = self._process_record(record)
 
-            try:
-                # Process individual record
-                self.helper.connector_logger.debug(f"Processing record {record_id}")
-
-                self.classifier.classify_data(html, record_id)
-
-                # Convert content to STIX
-                # stix_objects = self.deepseek_client.generate_stix_from_text(html)
-
-                # if stix_objects:
-                #     # Create and send individual bundle
-                #     # bundle = self.helper.stix2_create_bundle(stix_objects)
-                #     # self.helper.send_stix2_bundle(bundle)
-                #     success = True
-                #     processed_count += 1
-                #     self.helper.connector_logger.info(f"Successfully processed record {record_id}")
-                # else:
-                #     self.helper.connector_logger.warning(f"Empty STIX conversion for record {record_id}")
-
-            except Exception as e:
-                error_count += 1
-                self.helper.connector_logger.error(
-                    f"Error processing record {record_id}: {str(e)}",
-                    {"record_id": record_id, "error": str(e)},
-                )
-            finally:
                 if success:
-                    try:
-                        self.db_handler.mark_as_processed(record_id)
-                    except Exception as e:
-                        error_count += 1
-                        self.helper.connector_logger.error(
-                            f"Failed to mark record {record_id} as processed: {str(e)}"
-                        )
+                    processed_count += 1
+                else:
+                    error_count += 1
 
-        # Final status report
         self.helper.connector_logger.info(
             f"Processing complete - Successful: {processed_count}, Failed: {error_count}, Total: {len(records)}"
         )
+
+    def _get_record_lock(self, record_id: int) -> threading.Lock:
+        """Get or create record-specific lock"""
+        with self.global_lock:
+            if record_id not in self.record_locks:
+                self.record_locks[record_id] = threading.Lock()
+            return self.record_locks[record_id]
+
+    def _process_record(self, record: tuple) -> bool:
+        """Thread-safe single record processing"""
+        record_id, url, keywords, html, timestamp = record
+        self.helper.connector_logger.debug(f"Processing record {record_id}")
+
+        try:
+            # Classification
+            self.classifier.classify_data(html, record_id)
+
+            # # STIX Conversion
+            # stix_objects = self.deepseek_client.generate_stix_from_text(html)
+            #
+            # # Validation
+            # if not self._validate_stix_objects(stix_objects, record_id):
+            #     return False
+            #
+            # # Bundle Handling
+            # if not self._handle_bundle(stix_objects, record_id):
+            #     return False
+
+            # Mark processed
+            self._safe_mark_processed(record_id)
+            return True
+
+        except Exception as e:
+            self.helper.connector_logger.error(
+                f"Error processing record {record_id}: {str(e)}",
+                {"record_id": record_id, "error": str(e)},
+                exc_info=True
+            )
+            return False
+
+    def _validate_stix_objects(self, stix_objects: list, record_id: int) -> bool:
+        """Validate STIX objects structure"""
+        if not isinstance(stix_objects, list):
+            self.helper.connector_logger.error(
+                f"Invalid STIX format for record {record_id}: Expected list, got {type(stix_objects)}"
+            )
+            return False
+        if not stix_objects:
+            self.helper.connector_logger.warning(
+                f"Empty STIX conversion for record {record_id}"
+            )
+            return False
+        return True
+
+    def _handle_bundle(self, stix_objects: list, record_id: int) -> bool:
+        """Handle bundle creation and sending"""
+        try:
+            bundle = self.helper.stix2_create_bundle(stix_objects)
+            self.helper.send_stix2_bundle(bundle)
+            self.helper.connector_logger.info(
+                f"Successfully processed record {record_id}"
+            )
+            return True
+        except Exception as e:
+            self.helper.connector_logger.error(
+                f"Bundle error for record {record_id}: {str(e)}",
+                {"record_id": record_id, "error": str(e)}
+            )
+            return False
+
+    def _safe_mark_processed(self, record_id: int) -> None:
+        """Atomic mark-as-processed operation"""
+        try:
+            with self.global_lock:
+                self.db_handler.mark_as_processed(record_id)
+        except Exception as e:
+            self.helper.connector_logger.error(
+                f"Failed to mark record {record_id} as processed: {str(e)}"
+            )
 
     def run(self) -> None:
         """Main execution scheduler"""
