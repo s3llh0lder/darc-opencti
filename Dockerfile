@@ -1,11 +1,15 @@
 # Use Python 3.11 on Debian Bookworm instead of Alpine
 FROM python:3.11-bookworm
 
+LABEL org.opencontainers.image.title="darc-opencti" \
+      org.opencontainers.image.description="OpenCTI Connector" \
+      org.opencontainers.image.url="https://rado-solutions.com/" \
+      org.opencontainers.image.source="https://github.com/s3llh0lder/darc-opencti" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.licenses='BSD 3-Clause "New" or "Revised" License'
+
 # Environment variable
 ENV CONNECTOR_TYPE=EXTERNAL_IMPORT
-
-# Copy your connector source code
-COPY src /opt/opencti-connector-darc
 
 # Install required packages
 # - apt-get update & upgrade
@@ -23,6 +27,10 @@ RUN apt-get update && \
 
 # Now install Python dependencies
 # (Adjust to your project's requirements, e.g., `pip install -r requirements.txt`)
+
+# Copy your connector source code
+COPY src /opt/opencti-connector-darc
+
 WORKDIR /opt/opencti-connector-darc
 RUN pip3 install --no-cache-dir -r requirements.txt
 

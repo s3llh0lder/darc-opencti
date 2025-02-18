@@ -2,6 +2,53 @@ import json
 import re
 from openai import OpenAI  # Add OpenAI dependency
 
+stix_bundle = """```json
+{
+  "type": "bundle",
+  "id": "bundle--fff9e3c6-f0dd-4038-97ed-902dce183a1c",
+  "objects": [
+    {
+      "type": "malware",
+      "id": "malware--3d864934-72af-4343-9473-21768e8b9d27,
+      "name": "Chaos Ransomware Builder",
+      "description": "A tool for creating ransomware variants."
+    },
+    {
+      "type": "malware",
+      "id": "malware--b565077a-c009-41b4-a00e-0afc529200b8",
+      "name": "Ransomware-Builder-By-Shozab-Haxor",
+      "description": "A ransomware creation tool."
+    },
+    {
+      "type": "malware",
+      "id": "malware--df44546f-b8cd-4c69-8648-c33eca89a4d5",
+      "name": "Kraken V2 Android Banking RAT",
+      "description": "A remote access trojan targeting Android banking applications."
+    },
+    {
+      "type": "malware",
+      "id": "malware--aca95996-a5fb-48c9-a4e2-1b04fbfbfec3",
+      "name": "Venom Cracked",
+      "description": "A cracked version of the Venom remote access trojan."
+    },
+    {
+      "type": "tool",
+      "id": "tool--15588abd-9b3c-4ac9-82f0-f209b69fbcef",
+      "name": "Whatsapp-Botmaster-Cracked",
+      "description": "A cracked tool for automating WhatsApp interactions."
+    },
+    {
+      "type": "relationship",
+      "id": "relationship--9a1e0bac-bf11-483a-933f-b2f8239377b3",
+      "source_ref": "attack-pattern--95f314bd-e2fa-4ea4-b48b-6d438344cb68,
+      "target_ref": "tool--ec0b584d-8647-44ed-b048-282fb0a1218d",
+      "relationship_type": "uses"
+    }
+  ]
+}
+```"""
+
+
 
 class ConnectorClient:
     def __init__(self, helper, config):
@@ -13,6 +60,9 @@ class ConnectorClient:
             api_key=self.config.deepseek_api_key,
             base_url=self.config.deepseek_api_url,
         )
+
+    def generate_stix_from_text_mock(self, text: str) -> dict:
+            return self._validate_stix(stix_bundle)
 
     def generate_stix_from_text(self, text: str) -> dict:
         """
@@ -49,7 +99,7 @@ class ConnectorClient:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": text},
                 ],
-                response_format={"type": "json_object"},
+                # response_format={"type": "json_object"},
                 temperature=0.1,
                 stream=False,
             )

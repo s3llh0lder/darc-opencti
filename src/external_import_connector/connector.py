@@ -1,5 +1,7 @@
 import threading
 import psycopg2
+import time
+from datetime import datetime
 from pycti import OpenCTIConnectorHelper
 from .classification.classifier import DataClassifier
 from .client_api import ConnectorClient
@@ -58,16 +60,21 @@ class DarcConnector:
             # Classification
             self.classifier.classify_data(html, record_id)
 
-            # # STIX Conversion
-            # stix_objects = self.deepseek_client.generate_stix_from_text(html)
-            #
-            # # Validation
-            # if not self._validate_stix_objects(stix_objects, record_id):
-            #     return False
-            #
-            # # Bundle Handling
-            # if not self._handle_bundle(stix_objects, record_id):
-            #     return False
+            # STIX Conversion (using the mock method for now)
+            stix_data = self.deepseek_client.generate_stix_from_text_mock(html)
+            # If a bundle dict is returned, extract the list of objects
+            if isinstance(stix_data, dict) and "objects" in stix_data:
+                stix_objects = stix_data["objects"]
+            else:
+                stix_objects = stix_data
+
+            # Validation now checks the extracted list
+            if not self._validate_stix_objects(stix_objects, record_id):
+                return False
+
+            # Bundle Handling (currently commented out)
+            if not self._handle_bundle(stix_objects, record_id):
+                return False
 
             # Mark processed
             self._safe_mark_processed(record_id)
@@ -96,18 +103,37 @@ class DarcConnector:
         return True
 
     def _handle_bundle(self, stix_objects: list, record_id: int) -> bool:
-        """Handle bundle creation and sending"""
+        """Handle bundle creation and sending with work registration"""
         try:
+            # Create a serialized STIX2 bundle from the list of objects
             bundle = self.helper.stix2_create_bundle(stix_objects)
-            self.helper.send_stix2_bundle(bundle)
-            self.helper.connector_logger.info(
-                f"Successfully processed record {record_id}"
+
+            # Register a work item before sending the bundle
+            timestamp = int(time.time())
+            now = datetime.utcfromtimestamp(timestamp)
+            friendly_name = f"DarcConnector run for record {record_id} @ {now.strftime('%Y-%m-%d %H:%M:%S')}"
+            work_id = self.helper.api.work.initiate_work(self.helper.connect_id, friendly_name)
+
+            # Send the STIX2 bundle, passing the work_id and connector scope (as entity types)
+            self.helper.send_stix2_bundle(
+                bundle,
+                entities_types=self.helper.connect_scope,
+                update=True,
+                work_id=work_id,
             )
+
+            self.helper.connector_logger.info(f"Successfully processed record {record_id}")
+
+            # Mark the work as processed with a success message
+            message = f"Processed record {record_id} successfully at {now.strftime('%Y-%m-%d %H:%M:%S')}"
+            self.helper.api.work.to_processed(work_id, message)
+
             return True
+
         except Exception as e:
             self.helper.connector_logger.error(
                 f"Bundle error for record {record_id}: {str(e)}",
-                {"record_id": record_id, "error": str(e)}
+                {"record_id": record_id, "error": str(e)},
             )
             return False
 
