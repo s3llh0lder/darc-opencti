@@ -5,37 +5,48 @@ from openai import OpenAI  # Add OpenAI dependency
 stix_bundle = """```json
 {
   "type": "bundle",
+  "spec_version": "2.1",
   "id": "bundle--fff9e3c6-f0dd-4038-97ed-902dce183a1c",
   "objects": [
     {
       "type": "malware",
       "id": "malware--3d864934-72af-4343-9473-21768e8b9d27",
       "name": "Chaos Ransomware Builder",
-      "description": "A tool for creating ransomware variants."
+      "description": "A tool for creating ransomware variants.",
+      "created": "2025-02-16T12:00:00Z",
+      "modified": "2025-02-16T12:00:00Z"
     },
     {
       "type": "malware",
       "id": "malware--b565077a-c009-41b4-a00e-0afc529200b8",
       "name": "Ransomware-Builder-By-Shozab-Haxor",
-      "description": "A ransomware creation tool."
+      "description": "A ransomware creation tool.",
+      "created": "2025-02-16T12:00:00Z",
+      "modified": "2025-02-16T12:00:00Z"
     },
     {
       "type": "malware",
       "id": "malware--df44546f-b8cd-4c69-8648-c33eca89a4d5",
       "name": "Kraken V2 Android Banking RAT",
-      "description": "A remote access trojan targeting Android banking applications."
+      "description": "A remote access trojan targeting Android banking applications.",
+      "created": "2025-02-16T12:00:00Z",
+      "modified": "2025-02-16T12:00:00Z"
     },
     {
       "type": "malware",
       "id": "malware--aca95996-a5fb-48c9-a4e2-1b04fbfbfec3",
       "name": "Venom Cracked",
-      "description": "A cracked version of the Venom remote access trojan."
+      "description": "A cracked version of the Venom remote access trojan.",
+      "created": "2025-02-16T12:00:00Z",
+      "modified": "2025-02-16T12:00:00Z"
     },
     {
       "type": "tool",
       "id": "tool--15588abd-9b3c-4ac9-82f0-f209b69fbcef",
       "name": "Whatsapp-Botmaster-Cracked",
-      "description": "A cracked tool for automating WhatsApp interactions."
+      "description": "A cracked tool for automating WhatsApp interactions.",
+      "created": "2025-02-16T12:00:00Z",
+      "modified": "2025-02-16T12:00:00Z"
     }
   ]
 }
