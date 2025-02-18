@@ -36,13 +36,6 @@ stix_bundle = """```json
       "id": "tool--15588abd-9b3c-4ac9-82f0-f209b69fbcef",
       "name": "Whatsapp-Botmaster-Cracked",
       "description": "A cracked tool for automating WhatsApp interactions."
-    },
-    {
-      "type": "relationship",
-      "id": "relationship--9a1e0bac-bf11-483a-933f-b2f8239377b3",
-      "source_ref": "attack-pattern--95f314bd-e2fa-4ea4-b48b-6d438344cb68",
-      "target_ref": "tool--ec0b584d-8647-44ed-b048-282fb0a1218d",
-      "relationship_type": "uses"
     }
   ]
 }

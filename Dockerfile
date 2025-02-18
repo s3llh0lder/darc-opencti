@@ -27,12 +27,16 @@ RUN apt-get update && \
 
 # Now install Python dependencies
 # (Adjust to your project's requirements, e.g., `pip install -r requirements.txt`)
+# Using pip:
+COPY requirements.txt /tmp
+RUN python3 -m pip install -r /tmp/requirements.txt --no-cache-dir
+
 
 # Copy your connector source code
 COPY src /opt/opencti-connector-darc
 
 WORKDIR /opt/opencti-connector-darc
-RUN pip3 install --no-cache-dir -r requirements.txt
+# RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Expose and entrypoint
 COPY entrypoint.sh /
