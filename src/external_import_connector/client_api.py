@@ -9,7 +9,7 @@ stix_bundle = """```json
   "objects": [
     {
       "type": "malware",
-      "id": "malware--3d864934-72af-4343-9473-21768e8b9d27,
+      "id": "malware--3d864934-72af-4343-9473-21768e8b9d27",
       "name": "Chaos Ransomware Builder",
       "description": "A tool for creating ransomware variants."
     },
@@ -40,7 +40,7 @@ stix_bundle = """```json
     {
       "type": "relationship",
       "id": "relationship--9a1e0bac-bf11-483a-933f-b2f8239377b3",
-      "source_ref": "attack-pattern--95f314bd-e2fa-4ea4-b48b-6d438344cb68,
+      "source_ref": "attack-pattern--95f314bd-e2fa-4ea4-b48b-6d438344cb68",
       "target_ref": "tool--ec0b584d-8647-44ed-b048-282fb0a1218d",
       "relationship_type": "uses"
     }
