@@ -5,11 +5,11 @@ from openai import OpenAI  # Add OpenAI dependency
 stix_bundle = """```json
 {
   "type": "bundle",
-  "spec_version": "2.1",
   "id": "bundle--fff9e3c6-f0dd-4038-97ed-902dce183a1c",
   "objects": [
     {
       "type": "malware",
+      "spec_version": "2.1",
       "id": "malware--3d864934-72af-4343-9473-21768e8b9d27",
       "name": "Chaos Ransomware Builder",
       "description": "A tool for creating ransomware variants.",
@@ -18,6 +18,7 @@ stix_bundle = """```json
     },
     {
       "type": "malware",
+      "spec_version": "2.1",
       "id": "malware--b565077a-c009-41b4-a00e-0afc529200b8",
       "name": "Ransomware-Builder-By-Shozab-Haxor",
       "description": "A ransomware creation tool.",
@@ -26,6 +27,7 @@ stix_bundle = """```json
     },
     {
       "type": "malware",
+      "spec_version": "2.1",
       "id": "malware--df44546f-b8cd-4c69-8648-c33eca89a4d5",
       "name": "Kraken V2 Android Banking RAT",
       "description": "A remote access trojan targeting Android banking applications.",
@@ -34,6 +36,7 @@ stix_bundle = """```json
     },
     {
       "type": "malware",
+      "spec_version": "2.1",
       "id": "malware--aca95996-a5fb-48c9-a4e2-1b04fbfbfec3",
       "name": "Venom Cracked",
       "description": "A cracked version of the Venom remote access trojan.",
@@ -42,6 +45,7 @@ stix_bundle = """```json
     },
     {
       "type": "tool",
+      "spec_version": "2.1",
       "id": "tool--15588abd-9b3c-4ac9-82f0-f209b69fbcef",
       "name": "Whatsapp-Botmaster-Cracked",
       "description": "A cracked tool for automating WhatsApp interactions.",
@@ -52,6 +56,51 @@ stix_bundle = """```json
 }
 ```"""
 
+stix_bundle_old = """```json
+{
+    "type": "bundle",
+    "id": "bundle--2a25c3c8-5d88-4ae9-862a-cc3396442317",
+    "objects": [
+        {
+            "type": "indicator",
+            "spec_version": "2.1",
+            "id": "indicator--a932fcc6-e032-476c-826f-cb970a5a1ade",
+            "created": "2014-02-20T09:16:08.989Z",
+            "modified": "2014-02-20T09:16:08.989Z",
+            "name": "File hash for Poison Ivy variant",
+            "description": "This file hash indicates that a sample of Poison Ivy is present.",
+            "indicator_types": [
+                "malicious-activity"
+            ],
+            "pattern": "[file:hashes.'SHA-256' = 'ef537f25c895bfa782526529a9b63d97aa631564d5d789c2b765448c8635fb6c']",
+            "pattern_type": "stix",
+            "valid_from": "2014-02-20T09:00:00Z"
+        },
+        {
+            "type": "malware",
+            "spec_version": "2.1",
+            "id": "malware--fdd60b30-b67c-41e3-b0b9-f01faf20d111",
+            "created": "2014-02-20T09:16:08.989Z",
+            "modified": "2014-02-20T09:16:08.989Z",
+            "name": "Poison Ivy",
+            "malware_types": [
+                "remote-access-trojan"
+            ],
+            "is_family": false
+        },
+        {
+            "type": "relationship",
+            "spec_version": "2.1",
+            "id": "relationship--29dcdf68-1b0c-4e16-94ed-bcc7a9572f69",
+            "created": "2020-02-29T18:09:12.808Z",
+            "modified": "2020-02-29T18:09:12.808Z",
+            "relationship_type": "indicates",
+            "source_ref": "indicator--a932fcc6-e032-476c-826f-cb970a5a1ade",
+            "target_ref": "malware--fdd60b30-b67c-41e3-b0b9-f01faf20d111"
+        }
+    ]
+}
+```"""
 
 
 class ConnectorClient:
