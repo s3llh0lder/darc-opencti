@@ -61,7 +61,7 @@ class DarcConnector:
             self.classifier.classify_data(html, record_id)
 
             # STIX Conversion (using the mock method for now)
-            stix_data = self.deepseek_client.generate_stix_from_text_mock(html)
+            stix_data = self.deepseek_client.generate_stix_from_text(html)
             # If a bundle dict is returned, extract the list of objects
             if isinstance(stix_data, dict) and "objects" in stix_data:
                 stix_objects = stix_data["objects"]
