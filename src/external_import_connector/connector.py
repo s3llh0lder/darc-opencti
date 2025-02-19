@@ -93,9 +93,7 @@ class DarcConnector:
 
     def _handle_deepseek(self, record_data):
         """Process DeepSeek step only if not already done"""
-        stix_data = self.deepseek_client.generate_stix_from_text(
-            record_data["html"]
-        )
+        stix_data = self.deepseek_client.generate_stix_from_text(record_data["html"])
         if not self._validate_stix_objects(
             stix_data.get("objects", []), record_data["id"]
         ):
@@ -162,25 +160,6 @@ class DarcConnector:
             and classification_v3["confidence"] > 0.9
         )
 
-    def _process_deepseek_step(self, record_data):
-        if record_data["sent_to_deepseek"]:
-            return True
-
-        stix_data = self.deepseek_client.generate_stix_from_text_mock(
-            record_data["html"]
-        )
-        if not self._validate_stix_objects(
-            stix_data.get("objects", []), record_data["id"]
-        ):
-            return False
-
-        self.db_handler.mark_sent_to_deepseek(record_data["id"], stix_data)
-        return True
-
-    def _process_opencti_step(self, record_data):
-        if record_data["sent_to_opencti"]:
-            return True
-
         self.db_handler.mark_sent_to_opencti(record_data["id"])
         return True
 
@@ -225,10 +204,11 @@ class DarcConnector:
                 work_id=work_id,
             )
 
+            self.db_handler.mark_sent_to_opencti(record_id)
+
             self.helper.connector_logger.info(
                 f"Successfully processed record {record_id}"
             )
-
             # Mark the work as processed with a success message
             message = f"Processed record {record_id} successfully at {now.strftime('%Y-%m-%d %H:%M:%S')}"
             self.helper.api.work.to_processed(work_id, message)
