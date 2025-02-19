@@ -116,7 +116,7 @@ class ConnectorClient:
         )
 
     def generate_stix_from_text_mock(self, text: str) -> dict:
-            return self._validate_stix(stix_bundle_old)
+            return self._validate_stix(stix_bundle)
 
     def generate_stix_from_text(self, text: str) -> dict:
         """

@@ -118,7 +118,7 @@ class DarcConnector:
             self.helper.send_stix2_bundle(
                 bundle,
                 entities_types=self.helper.connect_scope,
-                update=True,
+                update=False,
                 work_id=work_id,
             )
 
