@@ -84,7 +84,7 @@ class ConnectorClient:
             1. Identify malware, tools, and attack patterns
             2. Create relationships between entities
             3. Use proper STIXv2 syntax and object types
-            4. Include UUIDv4 for all objects
+            4. Include hexadecimal UUID for all objects (numbers 0 through 9 and letters A through F)
             5. You MUST return ONLY valid STIX 2.1 JSON wrapped in ```json markers.
             Example:
             ```json
