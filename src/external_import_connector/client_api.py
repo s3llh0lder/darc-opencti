@@ -159,7 +159,7 @@ class ConnectorClient:
                 try:
                     uuid.UUID(obj.get("id").split("--")[1])
                 except (ValueError, IndexError, AttributeError):
-                    self.helper.connector_logger.error("Invalid STIX UUID format")
+                    self.helper.connector_logger.error(f"Invalid STIX UUID format: {str(obj)}")
                     return {}
 
             # Basic STIX structure validation
