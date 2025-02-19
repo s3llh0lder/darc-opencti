@@ -1,5 +1,6 @@
 import json
 import re
+import uuid
 from openai import OpenAI  # Add OpenAI dependency
 
 stix_bundle = """```json
@@ -115,7 +116,7 @@ class ConnectorClient:
         )
 
     def generate_stix_from_text_mock(self, text: str) -> dict:
-            return self._validate_stix(stix_bundle)
+            return self._validate_stix(stix_bundle_old)
 
     def generate_stix_from_text(self, text: str) -> dict:
         """
@@ -130,7 +131,7 @@ class ConnectorClient:
             1. Identify malware, tools, and attack patterns
             2. Create relationships between entities
             3. Use proper STIXv2 syntax and object types
-            4. Include UUIDs for all objects
+            4. Include UUIDv4 for all objects
             5. You MUST return ONLY valid STIX 2.1 JSON wrapped in ```json markers.
             Example:
             ```json
@@ -141,7 +142,10 @@ class ConnectorClient:
                 {
                   "type": "malware",
                   "id": "malware--...",
+                  "spec_version": "2.1",
                   "name": "Example Malware"
+                  "created": "2020-02-29T18:09:12.808Z",
+                  "modified": "2020-02-29T18:09:12.808Z",
                 }
               ]
             }"""
@@ -192,8 +196,17 @@ class ConnectorClient:
                 )
                 return {}
 
+
             # Attempt JSON parsing
             parsed = json.loads(clean_data)
+
+            # Inside _validate_stix()
+            for obj in parsed.get("objects", []):
+                try:
+                    uuid.UUID(obj.get("id").split("--")[1])
+                except (ValueError, IndexError, AttributeError):
+                    self.helper.connector_logger.error("Invalid STIX UUID format")
+                    return {}
 
             # Basic STIX structure validation
             if not isinstance(parsed, dict) or parsed.get("type") != "bundle":
