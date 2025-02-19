@@ -1,6 +1,6 @@
 import threading
-import psycopg2
 import time
+import json
 from datetime import datetime
 from pycti import OpenCTIConnectorHelper
 from .classification.classifier import DataClassifier
@@ -33,7 +33,7 @@ class DarcConnector:
         for record in records:
             record_id = record[0]
             with self._get_record_lock(record_id):
-                success = self._process_record(record)
+                success = self._process_single_record(record)
 
                 if success:
                     processed_count += 1
@@ -51,42 +51,143 @@ class DarcConnector:
                 self.record_locks[record_id] = threading.Lock()
             return self.record_locks[record_id]
 
-    def _process_record(self, record: tuple) -> bool:
-        """Thread-safe single record processing"""
-        record_id, url, keywords, html, timestamp = record
-        self.helper.connector_logger.debug(f"Processing record {record_id}")
-
+    def _process_single_record(self, record: tuple) -> bool:
         try:
-            # Classification
-            self.classifier.classify_data(html, record_id)
-
-            # STIX Conversion (using the mock method for now)
-            stix_data = self.deepseek_client.generate_stix_from_text(html)
-            # If a bundle dict is returned, extract the list of objects
-            if isinstance(stix_data, dict) and "objects" in stix_data:
-                stix_objects = stix_data["objects"]
-            else:
-                stix_objects = stix_data
-
-            # Validation now checks the extracted list
-            if not self._validate_stix_objects(stix_objects, record_id):
+            record_data = self._unpack_record(record)
+            if not record_data:
                 return False
 
-            # Bundle Handling (currently commented out)
-            if not self._handle_bundle(stix_objects, record_id):
-                return False
+            self._perform_classification(record_data)
 
-            # Mark processed
-            self._safe_mark_processed(record_id)
-            return True
+            # Always mark processed after classification
+            self._safe_mark_processed(record_data["id"])
 
+            # Only process steps if criteria met
+            if self._meets_criteria(record_data["id"]):
+                return self._process_pipeline(record_data)
+
+            return True  # Marked processed but no further action
         except Exception as e:
             self.helper.connector_logger.error(
-                f"Error processing record {record_id}: {str(e)}",
-                {"record_id": record_id, "error": str(e)},
-                exc_info=True
+                f"Error processing single record {str(e)}"
             )
             return False
+
+    def _process_pipeline(self, record_data):
+        """Handle processing steps only if criteria met"""
+        try:
+            if not record_data["sent_to_deepseek"]:
+                if not self._handle_deepseek(record_data):
+                    return False
+
+            if not record_data["sent_to_opencti"]:
+                if not self._handle_opencti(record_data):
+                    return False
+
+            return True
+        except Exception as e:
+            self.helper.connector_logger.error(
+                f"Error processing pipline for record id: {record_data['id']} {str(e)}"
+            )
+            return False
+
+    def _handle_deepseek(self, record_data):
+        """Process DeepSeek step only if not already done"""
+        stix_data = self.deepseek_client.generate_stix_from_text(
+            record_data["html"]
+        )
+        if not self._validate_stix_objects(
+            stix_data.get("objects", []), record_data["id"]
+        ):
+            return False
+        self.db_handler.mark_sent_to_deepseek(record_data["id"], stix_data)
+        return True
+
+    def _handle_opencti(self, record_data):
+        """Process OpenCTI step only if not already done"""
+        try:
+            stix_data = self.db_handler.get_stix_data(record_data["id"])
+            if not stix_data:
+                self.helper.connector_logger.error(
+                    f"Missing STIX data for {record_data['id']}"
+                )
+                return False
+
+            # Ensure we have the objects list
+            if not isinstance(stix_data.get("objects"), list):
+                self.helper.connector_logger.error(
+                    f"Invalid STIX structure for {record_data['id']}"
+                )
+                return False
+
+            return self._handle_bundle(stix_data["objects"], record_data["id"])
+        except json.JSONDecodeError as e:
+            self.helper.connector_logger.error(
+                f"Invalid JSON for {record_data['id']}: {str(e)}"
+            )
+            return False
+
+    def _unpack_record(self, record):
+        try:
+            return {
+                "id": record[0],
+                "url": record[1],
+                "keywords": record[2],
+                "html": record[3],
+                "timestamp": record[4],
+                "sent_to_deepseek": record[5],
+                "sent_to_opencti": record[6],
+            }
+        except IndexError:
+            self.helper.connector_logger.error("Invalid record format")
+            return None
+
+    def _perform_classification(self, record_data):
+        self.classifier.classify_data(record_data["html"], record_data["id"])
+
+    def _meets_criteria(self, record_id):
+        classification_v2 = self.db_handler.get_classification_results(
+            record_id, "classification_results"
+        )
+        classification_v3 = self.db_handler.get_classification_results(
+            record_id, "classification_results_v3"
+        )
+
+        return (
+            classification_v2
+            and classification_v3
+            and classification_v2["category"] == "Exploit"
+            and classification_v3["category"] == "Exploit"
+            and classification_v2["confidence"] > 0.9
+            and classification_v3["confidence"] > 0.9
+        )
+
+    def _process_deepseek_step(self, record_data):
+        if record_data["sent_to_deepseek"]:
+            return True
+
+        stix_data = self.deepseek_client.generate_stix_from_text_mock(
+            record_data["html"]
+        )
+        if not self._validate_stix_objects(
+            stix_data.get("objects", []), record_data["id"]
+        ):
+            return False
+
+        self.db_handler.mark_sent_to_deepseek(record_data["id"], stix_data)
+        return True
+
+    def _process_opencti_step(self, record_data):
+        if record_data["sent_to_opencti"]:
+            return True
+
+        self.db_handler.mark_sent_to_opencti(record_data["id"])
+        return True
+
+    def _log_processing_error(self, record_id, error):
+        self.helper.connector_logger.error(
+            f"Error processing record {record_id}: {str(error)}", exc_info=True
+        )
 
     def _validate_stix_objects(self, stix_objects: list, record_id: int) -> bool:
         """Validate STIX objects structure"""
@@ -112,7 +213,9 @@ class DarcConnector:
             timestamp = int(time.time())
             now = datetime.utcfromtimestamp(timestamp)
             friendly_name = f"DarcConnector run for record {record_id} @ {now.strftime('%Y-%m-%d %H:%M:%S')}"
-            work_id = self.helper.api.work.initiate_work(self.helper.connect_id, friendly_name)
+            work_id = self.helper.api.work.initiate_work(
+                self.helper.connect_id, friendly_name
+            )
 
             # Send the STIX2 bundle, passing the work_id and connector scope (as entity types)
             self.helper.send_stix2_bundle(
@@ -122,7 +225,9 @@ class DarcConnector:
                 work_id=work_id,
             )
 
-            self.helper.connector_logger.info(f"Successfully processed record {record_id}")
+            self.helper.connector_logger.info(
+                f"Successfully processed record {record_id}"
+            )
 
             # Mark the work as processed with a success message
             message = f"Processed record {record_id} successfully at {now.strftime('%Y-%m-%d %H:%M:%S')}"
