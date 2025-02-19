@@ -57,19 +57,23 @@ class DarcConnector:
             if not record_data:
                 return False
 
+            # Perform classification only if missing
             self._perform_classification(record_data)
 
-            # Always mark processed after classification
-            self._safe_mark_processed(record_data["id"])
-
-            # Only process steps if criteria met
+            # Process pipeline if criteria met
+            success = True
             if self._meets_criteria(record_data["id"]):
-                return self._process_pipeline(record_data)
+                success = self._process_pipeline(record_data)
 
-            return True  # Marked processed but no further action
+            # Only mark processed after all successful operations
+            if success:
+                self._safe_mark_processed(record_data["id"])
+
+            return success
         except Exception as e:
             self.helper.connector_logger.error(
-                f"Error processing single record {str(e)}"
+                f"Error processing record {record_data['id'] if record_data else 'unknown'}: {str(e)}",
+                exc_info=True,
             )
             return False
 
@@ -141,7 +145,17 @@ class DarcConnector:
             return None
 
     def _perform_classification(self, record_data):
-        self.classifier.classify_data(record_data["html"], record_data["id"])
+        """Perform classification only if not already exists"""
+        # Check existing classifications
+        needs_v2 = not self.db_handler.get_classification_results(
+            record_data["id"], "classification_results"
+        )
+        needs_v3 = not self.db_handler.get_classification_results(
+            record_data["id"], "classification_results_v3"
+        )
+
+        if needs_v2 or needs_v3:
+            self.classifier.classify_data(record_data["html"], record_data["id"])
 
     def _meets_criteria(self, record_id):
         classification_v2 = self.db_handler.get_classification_results(
