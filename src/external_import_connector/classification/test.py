@@ -35,13 +35,13 @@ if __name__ == "__main__":
     print("Classifier v2")
     print(json.dumps(result, indent=2))
 
-    # result = classifier2.classify_data(example_data, 1, additional_features2)
-    # print('Classifier v3')
-    # print(json.dumps(result, indent=2))
+    result = classifier2.classify_data(example_data, 1, additional_features2)
+    print('Classifier v3')
+    print(json.dumps(result, indent=2))
 
-    # result = classifier3.classify_data(example_data, 1, additional_features2)
-    # print('Classifier v3_1')
-    # print(json.dumps(result, indent=2))
+    result = classifier3.classify_data(example_data, 1, additional_features2)
+    print('Classifier v3_1')
+    print(json.dumps(result, indent=2))
 
     result = classifier32.classify_data(example_data, 1, additional_features32)
     print("Classifier v3_2")
