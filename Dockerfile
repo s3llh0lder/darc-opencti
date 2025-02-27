@@ -28,12 +28,16 @@ RUN apt-get update && \
 # Create application directory
 WORKDIR /opt/opencti-connector-darc
 
-# Clone txt2stix directly into the project directory
-RUN git clone https://github.com/muchdogesec/txt2stix ./txt2stix
+# Clone txt2stix repository
+RUN git clone https://github.com/muchdogesec/txt2stix
+
+# Copy includes folder from txt2stix to src
+RUN mkdir -p src/includes && \
+    cp -r txt2stix/includes/* src/includes/
 
 # Copy application files
-COPY src/ ./src/
 COPY requirements.txt .
+COPY src/ ./src/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
