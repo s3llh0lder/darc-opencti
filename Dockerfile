@@ -1,4 +1,4 @@
-# Use Python 3.11 on Debian Bookworm instead of Alpine
+# Use Python 3.11 on Debian Bookworm
 FROM python:3.11-bookworm
 
 LABEL org.opencontainers.image.title="darc-opencti" \
@@ -8,12 +8,12 @@ LABEL org.opencontainers.image.title="darc-opencti" \
       org.opencontainers.image.version="1.0.0" \
       org.opencontainers.image.licenses='BSD 3-Clause "New" or "Revised" License'
 
-# Environment variable
-ENV CONNECTOR_TYPE=EXTERNAL_IMPORT
+# Environment variables
+ENV CONNECTOR_TYPE=EXTERNAL_IMPORT \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/opt/opencti-connector-darc
 
-# Install required packages
-# - apt-get update & upgrade
-# - Install Git, build-essential, libmagic, libffi-dev, libxml2-dev, libxslt-dev
+# Install system dependencies
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
@@ -25,22 +25,21 @@ RUN apt-get update && \
         libxslt-dev && \
     rm -rf /var/lib/apt/lists/*
 
-RUN git clone https://github.com/muchdogesec/txt2stix
-# Now install Python dependencies
-# (Adjust to your project's requirements, e.g., `pip install -r requirements.txt`)
-# Using pip:
-COPY requirements.txt /tmp
-RUN python3 -m pip install -r /tmp/requirements.txt --no-cache-dir
-
-
-# Copy your connector source code
-COPY src /opt/opencti-connector-darc
-COPY txt2stix/includes /opt/opencti-connector-darc
-
+# Create application directory
 WORKDIR /opt/opencti-connector-darc
-# RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Expose and entrypoint
-COPY entrypoint.sh /
+# Clone txt2stix directly into the project directory
+RUN git clone https://github.com/muchdogesec/txt2stix ./txt2stix
+
+# Copy application files
+COPY src/ ./src/
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy entrypoint and set permissions
+COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
+
 ENTRYPOINT ["/entrypoint.sh"]
