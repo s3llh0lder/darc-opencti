@@ -1,4 +1,4 @@
-# Use Python 3.11 on Debian Bookworm
+# Use Python 3.11 on Debian Bookworm instead of Alpine
 FROM python:3.11-bookworm
 
 LABEL org.opencontainers.image.title="darc-opencti" \
@@ -8,12 +8,12 @@ LABEL org.opencontainers.image.title="darc-opencti" \
       org.opencontainers.image.version="1.0.0" \
       org.opencontainers.image.licenses='BSD 3-Clause "New" or "Revised" License'
 
-# Environment variables
-ENV CONNECTOR_TYPE=EXTERNAL_IMPORT \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/opt/opencti-connector-darc
+# Environment variable
+ENV CONNECTOR_TYPE=EXTERNAL_IMPORT
 
-# Install system dependencies
+# Install required packages
+# - apt-get update & upgrade
+# - Install Git, build-essential, libmagic, libffi-dev, libxml2-dev, libxslt-dev
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
@@ -25,25 +25,24 @@ RUN apt-get update && \
         libxslt-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# Create application directory
-WORKDIR /opt/opencti-connector-darc
+RUN git clone https://github.com/muchdogesec/txt2stix
+# Now install Python dependencies
+# (Adjust to your project's requirements, e.g., `pip install -r requirements.txt`)
+# Using pip:
+COPY requirements.txt /tmp
+RUN python3 -m pip install -r /tmp/requirements.txt --no-cache-dir
 
-# Clone txt2stix repository
+# Copy your connector source code
+COPY src /opt/opencti-connector-darc
+
+WORKDIR /opt/opencti-connector-darc
 RUN git clone https://github.com/muchdogesec/txt2stix
 
 # Copy includes folder from txt2stix to src
-RUN mkdir -p src/includes && \
-    cp -r txt2stix/includes/* src/includes/
+RUN mkdir -p /opt/opencti-connector-darc/includes && \
+    cp -r txt2stix/includes/* /opt/opencti-connector-darc/includes/
 
-# Copy application files
-COPY requirements.txt .
-COPY src/ ./src/
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy entrypoint and set permissions
-COPY entrypoint.sh /entrypoint.sh
+# Expose and entrypoint
+COPY entrypoint.sh /
 RUN chmod +x /entrypoint.sh
-
 ENTRYPOINT ["/entrypoint.sh"]
