@@ -5,7 +5,7 @@ import time  # Added for timing
 
 from bs4 import BeautifulSoup
 from sklearn.model_selection import train_test_split
-from nltk.corpus import stopwords, wordnet
+from nltk.corpus import wordnet
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_extraction.text import TfidfVectorizer

@@ -75,8 +75,33 @@ class ConfigConnector:
             self.load,
         )
 
-        self.deepseek_api_url = get_config_variable(
-            "CONNECTOR_DEEP_SEEK_URL",
-            ["connector", "deepseek_api_url"],
+        self.input_token_limit = get_config_variable(
+            "INPUT_TOKEN_LIMIT",
+            ["connector", "input_token_limit"],
+            self.load,
+        )
+        self.temperature = get_config_variable(
+            "TEMPERATURE",
+            ["connector", "temperature"],
+            self.load,
+        )
+        self.ctibutler_base_url = get_config_variable(
+            "CTIBUTLER_BASE_URL",
+            ["connector", "ctibutler_base_url"],
+            self.load,
+        )
+        self.ctibutler_api_key = get_config_variable(
+            "CTIBUTLER_API_KEY",
+            ["connector", "ctibutler_api_key"],
+            self.load,
+        )
+        self.vulmatch_base_url = get_config_variable(
+            "VULMATCH_BASE_URL",
+            ["connector", "vulmatch_base_url"],
+            self.load,
+        )
+        self.vulmatch_api_key = get_config_variable(
+            "VULMATCH_API_KEY",
+            ["connector", "vulmatch_api_key"],
             self.load,
         )

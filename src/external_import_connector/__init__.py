@@ -6,7 +6,10 @@
 #     sys.path.append(_extern)
 
 from .connector import DarcConnector
-from .classification.v2.classifier import DataClassifierV2
-from .classification.v3_2.classifier import DataClassifierV32
 
-__all__ = ["DarcConnector", "DataClassifierV2", "DataClassifierV32"]
+# from .classification.v2.classifier import DataClassifierV2
+# from .classification.v3_2.classifier import DataClassifierV32
+#
+# __all__ = ["DarcConnector", "DataClassifierV2", "DataClassifierV32"]
+
+__all__ = ["DarcConnector"]

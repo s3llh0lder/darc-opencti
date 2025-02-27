@@ -41,7 +41,8 @@ class DatabaseHandler:
                 processed BOOLEAN NOT NULL DEFAULT FALSE,
                 sent_to_deepseek BOOLEAN NOT NULL DEFAULT FALSE,
                 sent_to_opencti BOOLEAN NOT NULL DEFAULT FALSE,
-                stix_data JSONB
+                stix_data JSONB,
+                stix_bundle JSONB
             )"""
         )
 
@@ -91,6 +92,12 @@ class DatabaseHandler:
             ADD COLUMN IF NOT EXISTS stix_data JSONB
         """
         )
+        cursor.execute(
+            """
+            ALTER TABLE db.matched_content 
+            ADD COLUMN IF NOT EXISTS stix_bundle JSONB
+            """
+        )
 
     def save_classification(self, processed_data_id: int, classification: dict):
         self._save_classification_result(
@@ -134,14 +141,17 @@ class DatabaseHandler:
             cursor.execute(query)
             return cursor.fetchall()
 
-    def mark_sent_to_deepseek(self, record_id: int, stix_data: dict):
+    def mark_sent_to_deepseek(self, record_id: int, stix_data: dict, stix_bundle: dict):
         update_query = """
             UPDATE db.matched_content 
-            SET sent_to_deepseek = TRUE, stix_data = %s::jsonb 
+            SET sent_to_deepseek = TRUE, stix_data = %s::jsonb, stix_bundle = %s::jsonb 
             WHERE id = %s
         """
         with self.db_conn.cursor() as cursor:
-            cursor.execute(update_query, (json.dumps(stix_data), record_id))
+            cursor.execute(
+                update_query,
+                (json.dumps(stix_data), json.dumps(stix_bundle), record_id),
+            )
             self.db_conn.commit()
 
     def mark_sent_to_opencti(self, record_id: int):
@@ -154,9 +164,9 @@ class DatabaseHandler:
             cursor.execute(update_query, (record_id,))
             self.db_conn.commit()
 
-    def get_stix_data(self, record_id: int) -> dict:
+    def get_stix_bundle(self, record_id: int) -> dict:
         query = """
-            SELECT stix_data::text 
+            SELECT stix_bundle::text 
             FROM db.matched_content 
             WHERE id = %s
         """
