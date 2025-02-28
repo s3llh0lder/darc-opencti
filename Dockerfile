@@ -25,22 +25,22 @@ RUN apt-get update && \
         libxslt-dev && \
     rm -rf /var/lib/apt/lists/*
 
-RUN git clone https://github.com/muchdogesec/txt2stix
 # Now install Python dependencies
 # (Adjust to your project's requirements, e.g., `pip install -r requirements.txt`)
 # Using pip:
-COPY requirements.txt /tmp
-RUN python3 -m pip install -r /tmp/requirements.txt --no-cache-dir
 
 # Copy your connector source code
 COPY src /opt/opencti-connector-darc
 
-WORKDIR /opt/opencti-connector-darc
+WORKDIR /opt
 RUN git clone https://github.com/muchdogesec/txt2stix
 
 # Copy includes folder from txt2stix to src
 RUN mkdir -p /opt/opencti-connector-darc/includes && \
     cp -r txt2stix/includes/* /opt/opencti-connector-darc/includes/
+
+COPY requirements.txt /tmp
+RUN python3 -m pip install -r /tmp/requirements.txt --no-cache-dir
 
 # Expose and entrypoint
 COPY entrypoint.sh /
