@@ -1,6 +1,6 @@
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class OpenCTIHandler:
@@ -23,7 +23,8 @@ class OpenCTIHandler:
 
             # Register work
             timestamp = int(time.time())
-            now = datetime.utcfromtimestamp(timestamp)
+
+            now = datetime.fromtimestamp(timestamp, timezone.utc)
             friendly_name = f"DarcConnector run @ {now.strftime('%Y-%m-%d %H:%M:%S')}"
             work_id = self.helper.api.work.initiate_work(
                 self.helper.connect_id, friendly_name
