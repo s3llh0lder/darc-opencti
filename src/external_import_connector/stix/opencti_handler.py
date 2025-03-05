@@ -1,4 +1,5 @@
 import time
+import json
 from datetime import datetime
 
 
@@ -8,17 +9,17 @@ class OpenCTIHandler:
     def __init__(self, helper):
         self.helper = helper
 
-    def send_stix_bundle(self, stix_objects: list, record_id: int) -> bool:
+    def send_stix_bundle(self, bundle: dict, record_id: int) -> bool:
         """
         Validates and sends STIX objects to OpenCTI as a bundle.
         Returns True on success, False otherwise.
         """
-        if not self._validate_stix_objects(stix_objects, record_id):
+        if not self._validate_stix_bundle(bundle, record_id):
             return False
 
         try:
-            # Create STIX bundle
-            bundle = self.helper.stix2_create_bundle(stix_objects)
+
+            bundle_str  = json.dumps(bundle)
 
             # Register work
             timestamp = int(time.time())
@@ -30,7 +31,7 @@ class OpenCTIHandler:
 
             # Send bundle
             self.helper.send_stix2_bundle(
-                bundle,
+                bundle_str,
                 entities_types=self.helper.connect_scope,
                 update=False,
                 work_id=work_id,
@@ -50,16 +51,21 @@ class OpenCTIHandler:
             )
             return False
 
-    def _validate_stix_objects(self, stix_objects: list, record_id: int) -> bool:
-        """Validates STIX objects structure."""
-        if not isinstance(stix_objects, list):
+    def _validate_stix_bundle(self, bundle: dict, record_id: int) -> bool:
+        """Validates STIX bundle structure."""
+        if not isinstance(bundle, dict):
             self.helper.connector_logger.error(
-                f"Invalid STIX format (record {record_id}): Expected list, got {type(stix_objects)}"
+                f"Invalid STIX format (record {record_id}): Expected dict, got {type(bundle)}"
             )
             return False
-        if not stix_objects:
-            self.helper.connector_logger.warning(
-                f"Empty STIX bundle for record {record_id}"
+        if bundle.get("type") != "bundle":
+            self.helper.connector_logger.error(
+                f"Invalid STIX bundle (record {record_id}): Missing or incorrect 'type'"
+            )
+            return False
+        if not isinstance(bundle.get("objects"), list):
+            self.helper.connector_logger.error(
+                f"Invalid STIX bundle (record {record_id}): Missing or invalid 'objects' list"
             )
             return False
         return True

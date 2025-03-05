@@ -19,10 +19,10 @@ class OpenCTIProcessor:
             return True  # Skip existing entities
 
         stix_data = self.db.get_stix_bundle(record_data["id"])
-        if not stix_data or not isinstance(stix_data.get("objects"), list):
+        if not stix_data or not isinstance(stix_data, dict) or not isinstance(stix_data.get("objects"), list):
             return False
 
-        if self.handler.send_stix_bundle(stix_data["objects"], record_data["id"]):
+        if self.handler.send_stix_bundle(stix_data, record_data["id"]):
             self.db.mark_opencti_complete(record_data["id"])
             return True
         return False
