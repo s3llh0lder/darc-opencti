@@ -34,8 +34,9 @@ class OpenCTIHandler:
                 self.helper.connect_id, friendly_name
             )
             # # Send bundle : todo verify how this work cannot be done by helper: issue with missing references
+            # bundle_created = self.helper.stix2_create_bundle(bundle["objects"])
             # self.helper.send_stix2_bundle(
-            #     bundle_str,
+            #     bundle_created,
             #     entities_types=self.helper.connect_scope,
             #     update=False,
             #     work_id=work_id,
