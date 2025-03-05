@@ -1,11 +1,11 @@
 import json
 
-from src.external_import_connector.classification.v2.classifier import DataClassifierV2
-from src.external_import_connector.classification.v3.classifier import DataClassifierV3
-from src.external_import_connector.classification.v3_1.classifier import (
+from .v2.classifier import DataClassifierV2
+from .v3.classifier import DataClassifierV3
+from .v3_1.classifier import (
     DataClassifierV31,
 )
-from src.external_import_connector.classification.v3_2.classifier import (
+from .v3_2.classifier import (
     DataClassifierV32,
 )
 

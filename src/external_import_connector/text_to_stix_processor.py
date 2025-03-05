@@ -52,9 +52,9 @@ class Text2StixProcessor:
                 stix_bundle = json.load(f)
 
             # Replace all 'relationship_type' values with 'related-to' in the bundle
-            for obj in stix_bundle.get('objects', []):
-                if 'relationship_type' in obj:
-                    obj['relationship_type'] = 'related-to'
+            for obj in stix_bundle.get("objects", []):
+                if "relationship_type" in obj:
+                    obj["relationship_type"] = "related-to"
 
             self.db.mark_deepseek_complete(record_id, stix_data, stix_bundle)
             return True

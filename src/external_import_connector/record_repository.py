@@ -1,4 +1,4 @@
-from src.external_import_connector.db import DBSingleton
+from .db import DBSingleton
 from typing import Optional, Dict, Any
 
 
