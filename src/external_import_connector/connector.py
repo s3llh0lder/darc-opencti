@@ -1,4 +1,4 @@
-from pycti import OpenCTIConnectorHelper
+from pycti import OpenCTIApiClient, OpenCTIConnectorHelper
 from .classification.classifier import DataClassifier
 from .classify_manager import ClassificationManager
 from .config_variables import ConfigConnector
@@ -14,6 +14,7 @@ class DarcConnector:
     def __init__(self):
         self.config = ConfigConnector()
         self.helper = OpenCTIConnectorHelper(self.config.load)
+        self.client = OpenCTIApiClient(self.config.url, self.config.token)
         self.logger = self.helper.connector_logger
 
         # Initialize components
@@ -21,7 +22,7 @@ class DarcConnector:
         self.lock_manager = LockManager()
         self.classifier = ClassificationManager(DataClassifier(), self.db)
         self.deepseek_processor = Text2StixProcessor(self.config, self.db, self.logger)
-        self.opencti_processor = OpenCTIProcessor(self.helper, self.db)
+        self.opencti_processor = OpenCTIProcessor(self.client, self.helper, self.db)
 
     def process_data(self) -> None:
         """Main processing loop"""

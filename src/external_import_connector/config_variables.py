@@ -41,6 +41,16 @@ class ConfigConnector:
             ["connector", "duration_period"],
             self.load,
         )
+        self.url = get_config_variable(
+            "OPENCTI_URL",
+            ["opencti", "url"],
+            self.load,
+        )
+        self.token = get_config_variable(
+            "OPENCTI_TOKEN",
+            ["opencti", "token"],
+            self.load,
+        )
 
         # Connector extra parameters
         self.db_name = get_config_variable(

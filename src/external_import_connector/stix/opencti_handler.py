@@ -2,12 +2,15 @@ import time
 import json
 from datetime import datetime, timezone
 
+from pycti import OpenCTIApiClient
+
 
 class OpenCTIHandler:
     """Handles all OpenCTI-specific operations including bundle creation and sending."""
 
-    def __init__(self, helper):
+    def __init__(self, client: OpenCTIApiClient, helper):
         self.helper = helper
+        self.client = client
 
     def send_stix_bundle(self, bundle: dict, record_id: int) -> bool:
         """
@@ -19,9 +22,10 @@ class OpenCTIHandler:
 
         try:
 
-            bundle_str  = json.dumps(bundle)
+            bundle_str = json.dumps(bundle)
 
-            # Register work
+            #
+            # # Register work
             timestamp = int(time.time())
 
             now = datetime.fromtimestamp(timestamp, timezone.utc)
@@ -29,20 +33,23 @@ class OpenCTIHandler:
             work_id = self.helper.api.work.initiate_work(
                 self.helper.connect_id, friendly_name
             )
-
-            # Send bundle
-            self.helper.send_stix2_bundle(
-                bundle_str,
-                entities_types=self.helper.connect_scope,
-                update=False,
-                work_id=work_id,
-            )
+            # # Send bundle : todo verify how this work cannot be done by helper: issue with missing references
+            # self.helper.send_stix2_bundle(
+            #     bundle_str,
+            #     entities_types=self.helper.connect_scope,
+            #     update=False,
+            #     work_id=work_id,
+            # )
+            #
+            self.client.stix2.import_bundle_from_json(bundle_str, False, None, work_id)
 
             # Finalize work
             message = (
                 f"Processed record {record_id} at {now.strftime('%Y-%m-%d %H:%M:%S')}"
             )
+
             self.helper.api.work.to_processed(work_id, message)
+
             return True
 
         except Exception as e:
