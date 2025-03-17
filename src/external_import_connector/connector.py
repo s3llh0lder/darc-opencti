@@ -32,34 +32,33 @@ class DarcConnector:
                 self.logger.info("No new records to process")
                 return
 
-        results = {"success": 0, "errors": 0}
+        results = {"success": 0, "errors": 0, "not_classified": 0}
         for record in records:
             record_data = self.db.unpack_record(record)
             if not record_data:
                 continue
 
             with self.lock_manager.acquire_record_lock(record_data["id"]):
-                results[
-                    "success" if self._process_record(record_data) else "errors"
-                ] += 1
+                status = self._process_record(record_data)
+                results[status] += 1
 
         self.logger.info(
-            f"Processing complete - Successful: {results['success']}, Failed: {results['errors']}"
+            f"Processing complete - Successful: {results['success']}, Failed: {results['errors']}, Not Classified: {results['not_classified']}"
         )
 
-    def _process_record(self, record_data: dict) -> bool:
+    def _process_record(self, record_data: dict) -> str:
         try:
             self.classifier.ensure_classification(record_data)
 
             if not self._meets_criteria(record_data["id"]):
-                return False
+                return "not_classified"
 
-            return self._execute_pipeline(record_data)
+            return "success" if self._execute_pipeline(record_data) else "errors"
         except Exception as e:
             self.logger.error(
                 f"Error processing {record_data['id']}: {str(e)}", exc_info=True
             )
-            return False
+            return "errors"
 
     def _meets_criteria(self, record_id: int) -> bool:
         v2 = self.db.get_classification_results(record_id, "classification_results")
