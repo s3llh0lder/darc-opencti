@@ -1,0 +1,47 @@
+services:
+  connector-darc:
+    image: opencti/connector-darc:latest
+    environment:
+      # Connector's generic execution parameters
+      - OPENCTI_URL=http://opencti:8080
+      - OPENCTI_TOKEN=${OPENCTI_ADMIN_TOKEN}
+      # Connector's definition parameters REQUIRED
+      - CONNECTOR_ID=2dcd1065-c882-4ef5-bb69-3c33ec0c9205
+      - CONNECTOR_NAME=darknet-darc
+      - CONNECTOR_TYPE=EXTERNAL_IMPORT
+      - CONNECTOR_SCOPE=identity,attack-pattern,course-of-action,intrusion-set,malware,tool,report
+      - CONNECTOR_CONFIDENCE_LEVEL=40 # From 0 (Unknown) to 100 (Fully trusted)
+      - CONNECTOR_LOG_LEVEL=info
+      - CONNECTOR_DURATION_PERIOD=PT10S # ISO8601 format in String, start with 'P...' for Period
+
+      # Connector's definition parameters OPTIONAL
+      # - CONNECTOR_QUEUE_THRESHOLD=500 # Default 500Mo, Float accepted
+      # - CONNECTOR_RUN_AND_TERMINATE=False # Default False, True run connector once
+      # - CONNECTOR_SEND_TO_QUEUE=True # Default True
+      # - CONNECTOR_SEND_TO_DIRECTORY=False # Default False 
+      # - CONNECTOR_SEND_TO_DIRECTORY_PATH=CHANGEME # if CONNECTOR_SEND_TO_DIRECTORY is True, you must specify a path
+      # - CONNECTOR_SEND_TO_DIRECTORY_RETENTION=7 # Default 7, in days
+
+      # Connector's custom execution parameters
+      - CONNECTOR_DARC_DB_NAME=darknet
+      - CONNECTOR_DARC_DB_USER=darc
+      - CONNECTOR_DARC_DB_PASSWORD=Darc@1!33
+      - CONNECTOR_DARC_DB_HOST=192.168.2.216
+      - CONNECTOR_DARC_DB_PORT=5432
+      - CONNECTOR_DEEP_SEEK_API_KEY=sk-879d6096dd2841edae2619c086b74602
+      - CONNECTOR_DEEP_SEEK_URL=https://api.deepseek.com
+
+      # Add proxy parameters below if needed
+      # - HTTP_PROXY=CHANGEME
+      # - HTTPS_PROXY=CHANGEME
+      # - NO_PROXY=CHANGEME
+    restart: always
+
+    networks:
+     - opencti
+
+
+networks:
+  opencti:
+    external:
+      name: opencti-test_default
