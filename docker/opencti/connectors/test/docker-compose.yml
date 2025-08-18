@@ -28,7 +28,7 @@ services:
       - CONNECTOR_DARC_DB_PASSWORD=Darc@1!33
       - CONNECTOR_DARC_DB_HOST=192.168.2.216
       - CONNECTOR_DARC_DB_PORT=5432
-      - CONNECTOR_DEEP_SEEK_API_KEY=sk-879d6096dd2841edae2619c086b74602
+      - CONNECTOR_DEEP_SEEK_API_KEY=${DEEK_SEEK_TOKEN}
       - CONNECTOR_DEEP_SEEK_URL=https://api.deepseek.com
 
       # Add proxy parameters below if needed
