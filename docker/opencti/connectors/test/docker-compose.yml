@@ -25,7 +25,7 @@ services:
       # Connector's custom execution parameters
       - CONNECTOR_DARC_DB_NAME=darknet
       - CONNECTOR_DARC_DB_USER=darc
-      - CONNECTOR_DARC_DB_PASSWORD=Darc@1!33
+      - CONNECTOR_DARC_DB_PASSWORD=${DB_PASSWORD}
       - CONNECTOR_DARC_DB_HOST=192.168.2.216
       - CONNECTOR_DARC_DB_PORT=5432
       - CONNECTOR_DEEP_SEEK_API_KEY=${DEEK_SEEK_TOKEN}
